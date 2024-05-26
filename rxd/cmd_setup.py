@@ -11,6 +11,8 @@ After=network.target
 Type=simple
 ExecStart=/usr/bin/screen -dmS rxd {sys.executable} -m rxd.daemon
 TimeoutStopSec=5
+Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=default.target
