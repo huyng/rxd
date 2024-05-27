@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 
 setup(name='rxd',
-      version='0.0.3',
+      version='0.0.11',
       description='A reactive application manager',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -19,7 +19,7 @@ setup(name='rxd',
               'rxd = rxd.cmd:main',
           ],
       },
-      install_requires=["Flask", "Click"],
+      install_requires=["Flask", "Click", "tabulate"],
       zip_safe=False,
       url="https://github.com/huyng/rxd")
 

@@ -4,6 +4,7 @@ import subprocess as sp
 import json
 import typing as t
 import textwrap
+import getpass
 from pathlib import Path
 
 HOME = '~/.rxd'
@@ -83,6 +84,10 @@ class Application:
     def systemd_services_definition_path(self) -> Path:
         return self.workspace_container_path.joinpath("app.service").resolve()
 
+    @property
+    def systemd_service_name(self):
+        return f"rxd-app-{self.name}.service"
+
     def save(self):
         self.setup_metadata()
         path = self.metadata_path
@@ -142,19 +147,19 @@ class Application:
     def build(self):
         if repo_path := self.repo_path:
             with Chdir(repo_path):
-                sp.check_call(".deploy/build", shell=True)
+                sp.check_call("/usr/bin/bash .deploy/build", shell=True)
 
     def run(self):
         if repo_path := self.repo_path:
             with Chdir(repo_path):
-                sp.check_call(".deploy/run", shell=True)
+                sp.check_call("/usr/bin/bash .deploy/run", shell=True)
 
     def daemonize(self):
         screen_name = self.name
         python_path = sys.executable
+        user = getpass.getuser()
         systemd_service_file = \
             f"""
-            # save this into /etc/systemd/system/rxd.service
             [Unit]
             Description=rxd
             After=network.target
@@ -162,8 +167,9 @@ class Application:
             StartLimitBurst=5
 
             [Service]
-            Type=forking
-            ExecStart=/usr/bin/screen -dmS rxd {screen_name} {python_path} -m rxd.cmd app run {self.name}
+            Type=simple
+            User={user}
+            ExecStart={python_path} -m rxd.cmd app run {self.name}
             Restart=always
             RestartSec=5
 
@@ -172,19 +178,90 @@ class Application:
             """
         systemd_service_file = textwrap.dedent(systemd_service_file)
         systemd_service_install_path = Path(
-            '/etc/systemd/system/{self.name}.service')
+            f'/etc/systemd/system/{self.systemd_service_name}')
         print(f'Writing {self.systemd_services_definition_path}')
         with open(self.systemd_services_definition_path, "w") as fh:
             fh.write(systemd_service_file)
 
         if Path('/etc/systemd/system').exists():
             if not systemd_service_install_path.exists():
-                print("Symlinking %s -> %s" % (systemd_service_install_path,
-                                               self.systemd_services_definition_path))
-                self.systemd_services_definition_path\
-                    .symlink_to(systemd_service_install_path)
+
+                print("Moving %s -> %s" %
+                      (self.systemd_services_definition_path,
+                       systemd_service_install_path))
+                print("We need sudo permissions to do so")
+                sp.check_call(
+                    ["sudo", "mv",
+                     self.systemd_services_definition_path,
+                     systemd_service_install_path])
+                sp.check_call(["sudo", "systemctl",
+                               "daemon-reload"])
         else:
             print("Systemd does not exist")
+
+    def status(self, output=False):
+        if not Path('/etc/systemd/system').exists():
+            return None
+
+        lines = sp.check_output(["systemctl",
+                                 "show",
+                                 "--no-pager",
+                                 self.systemd_service_name])
+        lines = lines.decode("utf-8").split("\n")
+        status_data = {}
+        for line in lines:
+            kv = line.strip().split("=", 1)
+            if len(kv) == 2:
+                key, value = kv
+                status_data[key] = value
+
+        status = dict(
+            is_running=status_data.get('ActiveState') == 'active',
+            pid=int(status_data.get('MainPID', -1)),
+            user=status_data.get('User'),
+            memory_mb=int(status_data.get('MemoryCurrent', -1))/(1024*1024),
+            state=status_data.get('UnitFileState')
+        )
+        if output:
+            print(json.dumps(status, indent=4))
+        return status
+
+    def start(self):
+        sp.check_output(["systemctl",
+                         "start",
+                         self.systemd_service_name])
+
+    def stop(self):
+        sp.check_output(["systemctl",
+                         "stop",
+                         self.systemd_service_name])
+
+    def restart(self):
+        sp.check_output(["systemctl",
+                         "restart",
+                         self.systemd_service_name])
+        pass
+
+    def enable(self):
+        sp.check_output(["systemctl",
+                         "enable",
+                         self.systemd_service_name])
+
+    def disable(self):
+        sp.check_output(["systemctl",
+                         "disable",
+                         self.systemd_service_name])
+
+    def logs(self, follow=False):
+        if follow:
+            sp.check_output(["journalctl",
+                             "-f",
+                             "-u",
+                             self.systemd_service_name])
+        else:
+            sp.check_output(["journalctl",
+                             "-u",
+                             self.systemd_service_name])
 
     def __repr__(self):
         return "Application(name=%s, repo=%s)" % (self.name, self.repo)
