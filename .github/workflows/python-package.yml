@@ -37,7 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run mypy type checker
       run: |
-        mypy --install-types
+        mypy --install-types rxd/
         mypy rxd/
     - name: Test with pytest
       run: |
