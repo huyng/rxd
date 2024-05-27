@@ -4,8 +4,7 @@ from pathlib import Path
 # from .cmd_responder import responder_cmd_group
 from .cmd_app import app_cmd_group
 
-HOME = '~/.rxd'
-HOME = Path(HOME).expanduser().resolve()
+HOME = Path('~/.rxd').expanduser().resolve()
 
 
 @click.group(name="rxd")

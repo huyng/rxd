@@ -7,8 +7,7 @@ import textwrap
 import getpass
 from pathlib import Path
 
-HOME = '~/.rxd'
-HOME = Path(HOME).expanduser().resolve()
+HOME = Path('~/.rxd').expanduser().resolve()
 APP_DIR = Path(HOME, "apps")
 WORKSPACE_DIR = Path('~/workspace').expanduser().resolve()
 
