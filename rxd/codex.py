@@ -82,13 +82,13 @@ def test_hmac_verification():
 
 def test_Cipher():
     message = "This is a test payload"
-    Cipher = Cipher()
-    Cipher.generate_key()
-    encrypted_message = Cipher.encrypt(message)
-    decrypted_message = Cipher.decrypt(encrypted_message)
+    cipher = Cipher()
+    cipher.generate_key()
+    encrypted_message = cipher.encrypt(message)
+    decrypted_message = cipher.decrypt(encrypted_message)
     assert message == decrypted_message
 
     # generate a new key and make sure we can not decrypt
-    Cipher.generate_key()
-    decrypted_message = Cipher.decrypt(encrypted_message)
+    cipher.generate_key()
+    decrypted_message = cipher.decrypt(encrypted_message)
     assert message == decrypted_message
