@@ -71,12 +71,14 @@ class Cipher:
         f = Fernet(self.key)
         return f.decrypt(encrypted_message).decode('utf-8')
 
+
 def test_hmac_verification():
     secret = "hello world"
     payload = "This is a test payload"
     signature = generate_hmac_signature(secret, payload)
     is_verified = verify_hmac_signature(secret, payload, signature)
     assert is_verified, "generated signature does not match expected signature"
+
 
 def test_Cipher():
     message = "This is a test payload"

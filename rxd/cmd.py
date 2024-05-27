@@ -1,7 +1,7 @@
 import click
 import os
 from pathlib import Path
-from .cmd_responder import responder_cmd_group
+# from .cmd_responder import responder_cmd_group
 from .cmd_app import app_cmd_group
 
 HOME = '~/.rxd'
@@ -26,6 +26,14 @@ def trigger(address: str, app: str):
     requests.post(address, json={'payload': message_encoded})
 
 
+# @main.command()
+# @click.option("-w", "--workspace",
+#               required=False,
+#               type=str,
+#               default="workspace",
+#               help="Path to workspace directory where your apps will be stored")
+# def setup(workspace):
+
 @main.command()
 def setup():
     if not HOME.exists():
@@ -34,7 +42,7 @@ def setup():
 
 
 main.add_command(app_cmd_group)
-main.add_command(responder_cmd_group)
+# main.add_command(responder_cmd_group)
 
 if __name__ == "__main__":
     main()

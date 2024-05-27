@@ -217,9 +217,9 @@ class Application:
 
         status = dict(
             is_running=status_data.get('ActiveState') == 'active',
-            pid=int(status_data.get('MainPID', -1)),
+            pid=status_data.get('MainPID'),
             user=status_data.get('User'),
-            memory_mb=int(status_data.get('MemoryCurrent', -1))/(1024*1024),
+            memory_mb=status_data.get('MemoryCurrent'),
             state=status_data.get('UnitFileState')
         )
         if output:
@@ -227,41 +227,46 @@ class Application:
         return status
 
     def start(self):
-        sp.check_output(["systemctl",
-                         "start",
-                         self.systemd_service_name])
+        sp.check_call(["sudo",
+                       "systemctl",
+                       "start",
+                       self.systemd_service_name])
 
     def stop(self):
-        sp.check_output(["systemctl",
-                         "stop",
-                         self.systemd_service_name])
+        sp.check_call(["sudo",
+                       "systemctl",
+                       "stop",
+                       self.systemd_service_name])
 
     def restart(self):
-        sp.check_output(["systemctl",
-                         "restart",
-                         self.systemd_service_name])
+        sp.check_call(["sudo",
+                       "systemctl",
+                       "restart",
+                       self.systemd_service_name])
         pass
 
     def enable(self):
-        sp.check_output(["systemctl",
-                         "enable",
-                         self.systemd_service_name])
+        sp.check_call(["sudo",
+                       "systemctl",
+                       "enable",
+                       self.systemd_service_name])
 
     def disable(self):
-        sp.check_output(["systemctl",
-                         "disable",
-                         self.systemd_service_name])
+        sp.check_call(["sudo",
+                       "systemctl",
+                       "disable",
+                       self.systemd_service_name])
 
-    def logs(self, follow=False):
+    def log(self, follow=False):
         if follow:
-            sp.check_output(["journalctl",
-                             "-f",
-                             "-u",
-                             self.systemd_service_name])
+            sp.check_call(["journalctl",
+                           "-f",
+                           "-u",
+                           self.systemd_service_name])
         else:
-            sp.check_output(["journalctl",
-                             "-u",
-                             self.systemd_service_name])
+            sp.check_call(["journalctl",
+                           "-u",
+                           self.systemd_service_name])
 
     def __repr__(self):
         return "Application(name=%s, repo=%s)" % (self.name, self.repo)
