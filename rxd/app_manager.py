@@ -256,7 +256,7 @@ class Application:
                        "disable",
                        self.systemd_service_name])
 
-    def log(self, follow=False):
+    def logs(self, follow=False):
         if follow:
             sp.check_call(["journalctl",
                            "-f",
@@ -264,6 +264,7 @@ class Application:
                            self.systemd_service_name])
         else:
             sp.check_call(["journalctl",
+                           "-e",
                            "-u",
                            self.systemd_service_name])
 

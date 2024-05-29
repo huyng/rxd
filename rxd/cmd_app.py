@@ -194,8 +194,11 @@ def restart(name):
 
 @app_cmd_group.command()
 @click.argument('name')
-@click.option('-f', '--follow',  is_flag=True, show_default=True, default=False)
-def log(name, follow=False):
+@click.option('-f', '--follow',
+              is_flag=True,
+              show_default=True,
+              default=False)
+def logs(name, follow=False):
     """
     Get App's daemon's log
     """
@@ -204,7 +207,7 @@ def log(name, follow=False):
         print(f"Application with name '{app.name}' does not exists")
         return
 
-    app.log(follow)
+    app.logs(follow)
 
 
 if __name__ == '__main__':
