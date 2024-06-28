@@ -46,7 +46,9 @@ def info():
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH) as fh:
             config = json.load(fh)
-        workspace = config['workspace']
+        workspace = Path(config['workspace'])\
+            .expanduser()\
+            .resolve()
         print(f"Workspace: {workspace}")
 
 

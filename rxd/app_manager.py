@@ -16,7 +16,7 @@ WORKSPACE_DIR = Path('~/workspace').expanduser().resolve()
 if CONFIG_PATH.exists():
     with open(CONFIG_PATH) as fh:
         config = json.load(fh)
-        WORKSPACE_DIR = Path(config["workspace"])
+        WORKSPACE_DIR = Path(config["workspace"]).expanduser().resolve()
 
 
 class Chdir:
