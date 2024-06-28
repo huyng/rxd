@@ -59,10 +59,10 @@ class Manager:
 
 
 class Application:
-    def __init__(self, name,
-                 repo=None) -> None:
+    def __init__(self, name, repo=None, deploy_name=None) -> None:
         self.name = name
         self.repo = repo
+        self.deploy_name = ".deploy" if not deploy_name else deploy_name
 
     @property
     def repo_name(self) -> t.Union[str, None]:
@@ -100,10 +100,9 @@ class Application:
         with open(path, "w") as fh:
             json.dump({
                 "name": self.name,
-                "repo": self.repo
+                "repo": self.repo,
+                "deploy_name": self.deploy_name
             }, fh)
-
-        os.remove(self.metadata_path)
 
     def setup_metadata(self):
         if not self.metadata_path.parent.exists():
@@ -126,7 +125,8 @@ class Application:
             with open(metadata_path, "r") as fh:
                 data = json.load(fh)
                 return Application(name=data['name'],
-                                   repo=data['repo'])
+                                   repo=data['repo'],
+                                   deploy_name=data.get('deploy_name'))
         else:
             return Application(name=name)
 
@@ -170,13 +170,23 @@ class Application:
 
     def build(self):
         if repo_path := self.repo_path:
+            if not repo_path.exists():
+                print(f"{repo_path} does not exist, please run "
+                      f"'rxd app fetch {self.name}'")
+                return
             with Chdir(repo_path):
-                sp.check_call("/usr/bin/bash .deploy/build", shell=True)
+                sp.check_call(["/usr/bin/bash", f"{self.deploy_name}/build"],
+                              shell=True)
 
     def run(self):
         if repo_path := self.repo_path:
+            if not repo_path.exists():
+                print(f"{repo_path} does not exist, please run "
+                      f"'rxd app fetch {self.name}'")
+                return
             with Chdir(repo_path):
-                sp.check_call("/usr/bin/bash .deploy/run", shell=True)
+                sp.check_call(["/usr/bin/bash", f"{self.deploy_name}/run"],
+                              shell=True)
 
     def daemonize(self):
         Systemd.daemonize(self)

@@ -11,12 +11,15 @@ def app_cmd_group():
 @app_cmd_group.command()
 @click.argument('name')
 @click.argument('repo')
-def add(name, repo):
+@click.option('-d', '--dname',
+              required=False, type=str,
+              help="Use a different folder than the default .deploy")
+def add(name, repo, dname=None):
     """
     Add app to with <name> and <repo> to rxd
     """
-    print(f"adding {name} {repo}")
-    app = Application(name, repo)
+    print(f"adding {name} {repo} deploy_name={dname}")
+    app = Application(name, repo, deploy_name=dname)
     if app.exists():
         print(f"Application with name '{app.name}' already exists")
     else:
@@ -90,6 +93,7 @@ def list():
         if status:
             table.append([app.name,
                           app.repo,
+                          app.deploy_name,
                           status['is_running'],
                           status['state'],
                           status['pid'],
@@ -98,12 +102,14 @@ def list():
         else:
             table.append([app.name,
                           app.repo,
+                          app.deploy_name,
                           None,
                           None,
                           None,
                           None])
     print(tabulate(table, headers=['Name',
                                    'Repo',
+                                   'Deploy Target',
                                    'Running',
                                    'State',
                                    'PID',
