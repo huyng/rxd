@@ -35,7 +35,7 @@ class Systemd:
         cls.disable(app)
         if install_path.exists():
             print("Removing %s" % install_path)
-            install_path.unlink()
+            run(["sudo", "rm", install_path])
 
     @classmethod
     def start(cls, app):
