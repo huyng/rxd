@@ -1,15 +1,22 @@
-import sys
 import os
 import subprocess as sp
 import json
 import typing as t
-import textwrap
-import getpass
 from pathlib import Path
+from .daemonizers import Systemd
+
 
 HOME = Path('~/.rxd').expanduser().resolve()
+CONFIG_PATH = HOME.joinpath("config.json")
 APP_DIR = Path(HOME, "apps")
+
+
+# Set workspace directory
 WORKSPACE_DIR = Path('~/workspace').expanduser().resolve()
+if CONFIG_PATH.exists():
+    with open(CONFIG_PATH) as fh:
+        config = json.load(fh)
+        WORKSPACE_DIR = Path(config["workspace"])
 
 
 class Chdir:
@@ -31,7 +38,7 @@ class Chdir:
             self.oldcwd = None
 
 
-class AppManager:
+class Manager:
     def __init__(self):
         pass
 
@@ -43,8 +50,8 @@ class AppManager:
         app = Application(name, repo)
         app.save()
 
-    def delete(self, name):
-        return Application.load(name).delete()
+    def remove(self, name):
+        return Application.load(name).remove()
 
     def fetch(self, name):
         app = Application.load(name)
@@ -96,7 +103,6 @@ class Application:
                 "repo": self.repo
             }, fh)
 
-    def delete(self):
         os.remove(self.metadata_path)
 
     def setup_metadata(self):
@@ -143,6 +149,25 @@ class Application:
                 sp.check_call("git pull origin main",
                               shell=True)
 
+    def remove(self):
+        if workspace_path := self.workspace_container_path:
+            answer = input("Are you sure you want to remove '%s' [y/n] ?: "
+                           % workspace_path)
+            if answer.strip().lower() == 'y':
+                Systemd.remove(self)
+
+                # remove app's workspace folder
+                if workspace_path.exists():
+                    print("Removing %s" % workspace_path)
+                    import shutil
+                    shutil.rmtree(workspace_path)
+
+                # remove app's metadata file
+                if metadata_path := self.metadata_path:
+                    if self.metadata_path.exists():
+                        print("Removing %s" % metadata_path)
+                        metadata_path.unlink()
+
     def build(self):
         if repo_path := self.repo_path:
             with Chdir(repo_path):
@@ -154,119 +179,28 @@ class Application:
                 sp.check_call("/usr/bin/bash .deploy/run", shell=True)
 
     def daemonize(self):
-        screen_name = self.name
-        python_path = sys.executable
-        user = getpass.getuser()
-        systemd_service_file = \
-            f"""
-            [Unit]
-            Description=rxd
-            After=network.target
-            StartLimitIntervalSec=30
-            StartLimitBurst=5
-
-            [Service]
-            Type=simple
-            User={user}
-            ExecStart={python_path} -m rxd.cmd app run {self.name}
-            Restart=always
-            RestartSec=5
-
-            [Install]
-            WantedBy=default.target
-            """
-        systemd_service_file = textwrap.dedent(systemd_service_file)
-        systemd_service_install_path = Path(
-            f'/etc/systemd/system/{self.systemd_service_name}')
-        print(f'Writing {self.systemd_services_definition_path}')
-        with open(self.systemd_services_definition_path, "w") as fh:
-            fh.write(systemd_service_file)
-
-        if Path('/etc/systemd/system').exists():
-            if not systemd_service_install_path.exists():
-
-                print("Moving %s -> %s" %
-                      (self.systemd_services_definition_path,
-                       systemd_service_install_path))
-                print("We need sudo permissions to do so")
-                sp.check_call(
-                    ["sudo", "mv",
-                     self.systemd_services_definition_path,
-                     systemd_service_install_path])
-                sp.check_call(["sudo", "systemctl",
-                               "daemon-reload"])
-        else:
-            print("Systemd does not exist")
+        Systemd.daemonize(self)
 
     def status(self, output=False):
-        if not Path('/etc/systemd/system').exists():
-            return None
-
-        lines = sp.check_output(["systemctl",
-                                 "show",
-                                 "--no-pager",
-                                 self.systemd_service_name])
-        lines = lines.decode("utf-8").split("\n")
-        status_data = {}
-        for line in lines:
-            kv = line.strip().split("=", 1)
-            if len(kv) == 2:
-                key, value = kv
-                status_data[key] = value
-
-        status = dict(
-            is_running=status_data.get('ActiveState') == 'active',
-            pid=status_data.get('MainPID'),
-            user=status_data.get('User'),
-            memory_mb=status_data.get('MemoryCurrent'),
-            state=status_data.get('UnitFileState')
-        )
-        if output:
-            print(json.dumps(status, indent=4))
-        return status
+        return Systemd.status(self, output=output)
 
     def start(self):
-        sp.check_call(["sudo",
-                       "systemctl",
-                       "start",
-                       self.systemd_service_name])
+        Systemd.start(self)
 
     def stop(self):
-        sp.check_call(["sudo",
-                       "systemctl",
-                       "stop",
-                       self.systemd_service_name])
+        Systemd.stop(self)
 
     def restart(self):
-        sp.check_call(["sudo",
-                       "systemctl",
-                       "restart",
-                       self.systemd_service_name])
-        pass
+        Systemd.restart(self)
 
     def enable(self):
-        sp.check_call(["sudo",
-                       "systemctl",
-                       "enable",
-                       self.systemd_service_name])
+        Systemd.enable(self)
 
     def disable(self):
-        sp.check_call(["sudo",
-                       "systemctl",
-                       "disable",
-                       self.systemd_service_name])
+        Systemd.disable(self)
 
     def logs(self, follow=False):
-        if follow:
-            sp.check_call(["journalctl",
-                           "-f",
-                           "-u",
-                           self.systemd_service_name])
-        else:
-            sp.check_call(["journalctl",
-                           "-e",
-                           "-u",
-                           self.systemd_service_name])
+        Systemd.logs(self, follow=follow)
 
     def __repr__(self):
         return "Application(name=%s, repo=%s)" % (self.name, self.repo)

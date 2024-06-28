@@ -19,7 +19,7 @@ setup(name='rxd',
               'rxd = rxd.cmd:main',
           ],
       },
-      install_requires=["Flask", "Click", "tabulate"],
+      install_requires=["Flask", "Click", "tabulate", "pydantic"],
       zip_safe=False,
       url="https://github.com/huyng/rxd")
 

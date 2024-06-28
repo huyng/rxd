@@ -1,5 +1,5 @@
 import click
-from .app_manager import AppManager, Application
+from .app_manager import Manager, Application
 
 
 @click.group(name='app')
@@ -82,7 +82,7 @@ def list():
     List all apps currently installed
     """
     from tabulate import tabulate
-    am = AppManager()
+    am = Manager()
     table = []
     for app in am.list():
         status = app.status()
@@ -150,6 +150,20 @@ def start(name):
         return
 
     app.start()
+
+
+@app_cmd_group.command()
+@click.argument('name')
+def remove(name):
+    """
+    Start App's daemon
+    """
+    app = Application.load(name)
+    if not app.exists():
+        print(f"Application with name '{app.name}' does not exists")
+        return
+
+    app.remove()
 
 
 @app_cmd_group.command()

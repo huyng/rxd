@@ -42,16 +42,9 @@ def rxd_webhook_endpoint():
 # ----------------
 
 
-@click.group(name='responder')
-def responder_cmd_group():
-    """Web server to monitor for events"""
-    pass
-
-
-@responder_cmd_group.command()
-def run():
+def main():
     app.run(host='0.0.0.0', port=30475)
 
 
 if __name__ == '__main__':
-    responder_cmd_group()
+    main()

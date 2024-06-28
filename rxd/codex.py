@@ -2,7 +2,6 @@ import hashlib
 import hmac
 import typing as t
 from cryptography.fernet import Fernet
-from cryptography.fernet import Fernet
 
 
 def verify_hmac_signature(secret: t.Union[str, bytes],
