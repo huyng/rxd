@@ -175,7 +175,7 @@ class Application:
                       f"'rxd app fetch {self.name}'")
                 return
             with Chdir(repo_path):
-                sp.check_call(["/usr/bin/bash", f"{self.deploy_name}/build"],
+                sp.check_call(f"/usr/bin/bash {self.deploy_name}/build",
                               shell=True)
 
     def run(self):
@@ -185,7 +185,7 @@ class Application:
                       f"'rxd app fetch {self.name}'")
                 return
             with Chdir(repo_path):
-                sp.check_call(["/usr/bin/bash", f"{self.deploy_name}/run"],
+                sp.check_call(f"/usr/bin/bash {self.deploy_name}/run",
                               shell=True)
 
     def daemonize(self):
